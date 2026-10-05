@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "forges": {},
+  "remote_aliases": {},
+  "canonical_targets": {},
+  "greptile": {
+    "enabled": false,
+    "repositories": ["github.com/caniko/*"],
+    "billing_accounts": {},
+    "reviewer_id": 165735046,
+    "maximum_cost": null,
+    "cli": null,
+    "cli_identity": null,
+    "cli_qualification_receipt": "",
+    "cli_auth_file": null,
+    "cli_auth_digest": ""
+  },
+  "roborev": {
+    "socket": null,
+    "agent": "opencode",
+    "qualified": false,
+    "qualification_receipt": ""
+  },
+  "required_checks": [],
+  "policy_app_id": null,
+  "forgejo_token_env": {
+    "codefloe.com": "FORGEJO_TOKEN",
+    "codeberg.org": "CODEBERG_TOKEN"
+  }
+}

@@ -1,0 +1,31 @@
+[package]
+name = "opencode-repo-review-pr"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88"
+description = "Forge-aware, budgeted repository reviews for OpenCode"
+license = "MIT"
+repository = "https://github.com/caniko/opencode-repo-review-pr"
+
+[lib]
+name = "repo_review"
+
+[[bin]]
+name = "repo-review"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+canix-toolbelt = { version = "=0.2.0", default-features = false, features = ["review"] }
+clap = { version = "4", features = ["derive", "env"] }
+fs2 = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+rustix = { version = "1", features = ["process", "fs"] }
+tempfile = "3"
+ureq = { version = "3", features = ["json"] }
+url = "2"
+
+[lints.rust]
+unsafe_code = "forbid"

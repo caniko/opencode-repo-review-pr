@@ -1,0 +1,6 @@
+tree-root-file = "Cargo.toml"
+
+[formatter.rust]
+command = "rustfmt"
+options = ["--edition", "2021", "--config", "skip_children=true"]
+includes = ["*.rs"]
