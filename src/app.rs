@@ -745,12 +745,12 @@ impl Application {
             .join(&key)
             .join(policy.provider.as_str());
         storage::private_dir(&engine_state)?;
-        // The published engine reuses this anchor; precreate it with the same
-        // private mode and link checks as the consumer's other durable locks.
-        drop(storage::lock(&engine_state.join(format!(
+        // The engine must create its own fresh anchor before arming the history
+        // sentinel. Validate retained anchors without manufacturing empty history.
+        storage::validate_existing_lock(&engine_state.join(format!(
             "{}.lock",
             storage::digest(resolved.candidate.url.as_bytes())
-        )))?);
+        )))?;
         let mut outcome = review::ensure_once(
             &mut FrozenForge {
                 inner: &mut resolved.forge,

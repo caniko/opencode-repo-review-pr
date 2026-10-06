@@ -145,14 +145,15 @@ checksum = "fc652a48c352aef3ea3aed32080501cf3ef6ed5da78602a020c991775b0aff04"
 
 [[package]]
 name = "canix-toolbelt"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94cd99bb1098b04f5297ce0b3c93e2b27464424cb881726eed3b104faafe7328"
+checksum = "c36e12ff3cb2ff892115964e396df3fafd43d6ea73b37edf7d9e9617a5391853"
 dependencies = [
  "chrono",
  "fleetix",
  "fs2",
  "miette",
+ "rustix",
  "serde",
  "serde_json",
  "sha2",

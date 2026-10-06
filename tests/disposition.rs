@@ -66,9 +66,12 @@ fn body_revision_and_policy_changes_invalidate_dispositions() {
     };
     let review = Review {
         id: "review".into(),
+        provider_job_id: None,
+        provider_review_id: None,
         provider: "greptile".into(),
         reviewed_head: Some(candidate.head.clone()),
         requested_base: Some(candidate.base.clone()),
+        reviewed_base: None,
         policy_digest: policy.digest().unwrap(),
         completed: true,
         complete_findings: true,

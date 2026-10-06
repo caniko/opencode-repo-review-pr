@@ -73,6 +73,9 @@ fn execution_success_cannot_hide_findings_or_incomplete_coverage() {
     };
     let review =
         normalize_review(&raw, &job, &candidate(), &policy, 1, Scope::PullRequest).unwrap();
+    assert_eq!(review.provider_job_id.as_deref(), Some("12"));
+    assert_eq!(review.provider_review_id.as_deref(), Some("34"));
+    assert_eq!(review.reviewed_base, Some(candidate().base));
     assert_eq!(policy.evaluate(&candidate(), &review).exit_code(), 20);
     raw["structured_output"]["findings"] = json!([]);
     raw["file_coverage"]["excluded"] = json!(1);
@@ -141,7 +144,18 @@ fn divergent_target_range_qualifies_but_local_merge_base_remains_advisory() {
             "structured_output":{"schema_version":2,"summary":"No findings","verdict":"pass","findings":[]},
             "file_coverage":{"reviewed":files,"excluded":0}});
         let review = normalize_review(&raw, &job, &selected, &policy, files, scope).unwrap();
-        assert_eq!(policy.evaluate(&selected, &review).exit_code(), 0);
+        assert_eq!(
+            review.reviewed_base.as_deref(),
+            Some(if scope == Scope::PullRequest {
+                selected.base.as_str()
+            } else {
+                ancestor.as_str()
+            })
+        );
+        assert_eq!(
+            policy.evaluate(&selected, &review).exit_code(),
+            if scope == Scope::PullRequest { 0 } else { 22 }
+        );
     }
 }
 
@@ -190,6 +204,29 @@ fn wrong_pr_range_is_rejected_before_any_daemon_request() {
         std::io::ErrorKind::WouldBlock
     );
     assert!(!state.exists());
+}
+
+#[test]
+fn historical_roborev_records_without_base_attestation_cannot_grant_acceptance() {
+    let job =
+        json!({"id":12,"uuid":"uuid","git_ref":format!("{}..{}","b".repeat(40),"a".repeat(40))});
+    let raw = json!({"id":34,"job_id":12,"job":job,
+        "structured_output":{"schema_version":2,"summary":"No findings","verdict":"pass","findings":[]},
+        "file_coverage":{"reviewed":1,"excluded":0}});
+    let policy = Policy {
+        provider: "roborev".into(),
+        transport: "unix-http-v0.71".into(),
+        ..Policy::default()
+    };
+    let review =
+        normalize_review(&raw, &job, &candidate(), &policy, 1, Scope::PullRequest).unwrap();
+    assert_eq!(policy.evaluate(&candidate(), &review).exit_code(), 0);
+    let mut saved = serde_json::to_value(review).unwrap();
+    for field in ["reviewedBase", "providerJobId", "providerReviewId"] {
+        saved.as_object_mut().unwrap().remove(field);
+    }
+    let historical = serde_json::from_value(saved).unwrap();
+    assert_eq!(policy.evaluate(&candidate(), &historical).exit_code(), 22);
 }
 
 #[test]

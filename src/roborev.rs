@@ -386,10 +386,25 @@ impl Provider for Roborev {
 }
 
 fn verify_comparison(git_ref: &str, candidate: &Candidate, scope: Scope) -> Result<()> {
+    if matches!(scope, Scope::WorkingTree) {
+        if git_ref != "dirty" {
+            bail!("working-tree review requires the captured dirty comparison");
+        }
+        return Ok(());
+    }
     if matches!(scope, Scope::PullRequest)
         && git_ref != format!("{}..{}", candidate.base, candidate.head)
     {
         bail!("PR review must compare the full observed target SHA to the source SHA");
+    }
+    let (base, head) = git_ref
+        .split_once("..")
+        .context("review comparison must contain two full commit IDs")?;
+    if !matches!(base.len(), 40 | 64)
+        || !base.bytes().all(|byte| byte.is_ascii_hexdigit())
+        || head != candidate.head
+    {
+        bail!("review comparison must attest the actual base and intended source SHA");
     }
     Ok(())
 }
@@ -470,9 +485,15 @@ pub fn normalize_review(
             == Some(expected_files as u64);
     Ok(Review {
         id: review_id.clone(),
+        provider_job_id: Some(job_id(job)?.to_string()),
+        provider_review_id: Some(review_id.clone()),
         provider: "roborev".into(),
         reviewed_head: Some(candidate.head.clone()),
         requested_base: Some(candidate.base.clone()),
+        reviewed_base: job["git_ref"]
+            .as_str()
+            .and_then(|range| range.split_once(".."))
+            .map(|(base, _)| base.to_owned()),
         policy_digest: policy.digest()?,
         completed: true,
         complete_findings,

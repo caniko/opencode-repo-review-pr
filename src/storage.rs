@@ -105,6 +105,20 @@ pub fn save<T: Serialize>(path: &Path, value: &T) -> Result<()> {
     result
 }
 
+/// Preserve the engine's create-new freshness signal while checking retained
+/// anchors with the same private-file policy as consumer-owned locks.
+pub fn validate_existing_lock(path: &Path) -> Result<()> {
+    match open_private(path, rustix::fs::OFlags::RDWR) {
+        Ok(_) => Ok(()),
+        Err(error)
+            if error.downcast_ref::<rustix::io::Errno>() == Some(&rustix::io::Errno::NOENT) =>
+        {
+            Ok(())
+        }
+        Err(error) => Err(error),
+    }
+}
+
 pub fn lock(path: &Path) -> Result<File> {
     private_dir(path.parent().context("lock needs a parent")?)?;
     if fs::symlink_metadata(path).is_ok_and(|m| !m.is_file()) {

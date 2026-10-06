@@ -81,9 +81,12 @@ impl Fixture {
         };
         let review = Review {
             id: "fixture-review".into(),
+            provider_job_id: Some("fixture-job".into()),
+            provider_review_id: Some("fixture-review".into()),
             provider: policy.provider.clone(),
             reviewed_head: Some(candidate.head.clone()),
             requested_base: Some(candidate.base.clone()),
+            reviewed_base: Some(candidate.base.clone()),
             policy_digest: policy.digest()?,
             completed: true,
             complete_findings: true,

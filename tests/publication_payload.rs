@@ -19,9 +19,12 @@ fn report() -> (Report, Policy) {
     let policy = Policy::default();
     let review = Review {
         id: "one".into(),
+        provider_job_id: None,
+        provider_review_id: None,
         provider: policy.provider.clone(),
         reviewed_head: Some(candidate.head.clone()),
         requested_base: Some(candidate.base.clone()),
+        reviewed_base: None,
         policy_digest: policy.digest().unwrap(),
         completed: true,
         complete_findings: true,

@@ -146,9 +146,12 @@ impl GreptileCli {
         }
         Ok(Review {
             id: id.into(),
+            provider_job_id: Some(id.into()),
+            provider_review_id: None,
             provider: "greptile".into(),
             reviewed_head: Some(candidate.head.clone()),
             requested_base: Some(candidate.base.clone()),
+            reviewed_base: Some(comparison_base.into()),
             policy_digest: policy.digest()?,
             completed: true,
             complete_findings: true,

@@ -3,7 +3,7 @@
 `repo-review` plans, requests and tracks revision-bound repository reviews. It
 uses Greptile's confirmed free allowance for eligible GitHub targets, then
 roborev for overflow. Forgejo targets use roborev. The acceptance engine is the
-published `canix-toolbelt = 0.2.0` review library.
+published `canix-toolbelt = 0.2.1` review library.
 
 This repository contains the Rust CLI and five installable OpenCode V2 commands.
 Provider configuration and worker qualification are operator-owned. The default
@@ -196,10 +196,17 @@ retain the explicitly captured tracked diff. These local scopes remain advisory.
 An existing submission recorded with a different range blocks resumption; preserve
 its state and reconcile it rather than deleting its ledger to enqueue again.
 
-This client still uses published Toolbelt 0.2.0 and its local Unix transport. The
-newer `github-receipt-v1` producer APIs require a separately qualified registry
-release before consumer migration; this comparison fix does not qualify that
-transport or its production worker.
+This client consumes published Toolbelt 0.2.1 and retains its local Unix transport
+for committed and working-tree review scopes. The published
+`github-receipt-v1` producer and Unix dispatch APIs have separate integration and
+production-worker qualification gates.
+
+Review records retain distinct provider job/review identities and the attested
+compared base. A local merge-base comparison against a divergent target remains
+advisory: its actual base is preserved and the exact-target acceptance gate
+reports `blocked`. Working-tree reviews carry no committed-base attestation.
+Saved pre-migration records remain readable; missing base evidence cannot grant
+fresh roborev acceptance.
 
 Roborev dispatch explicitly requests the `low` severity floor and rejects jobs
 that used a narrower filter. Working-tree recovery reads the single-job detail
