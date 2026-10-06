@@ -114,6 +114,42 @@ fn completed_review_requires_the_exact_comparison_and_keeps_extra_gate_separate(
 }
 
 #[test]
+fn roborev_check_success_requires_actual_pr_base_attestation() {
+    let (mut report, _) = report();
+    let policy = Policy {
+        provider: "roborev".into(),
+        transport: "unix-http-v0.71".into(),
+        ..Policy::default()
+    };
+    report.route.provider = ProviderName::Roborev;
+    let review = report.outcome.review.as_mut().unwrap();
+    review.provider = policy.provider.clone();
+    review.policy_digest = policy.digest().unwrap();
+    for reviewed_base in [
+        None,
+        Some("e".repeat(40)),
+        Some(report.route.candidate.base.clone()),
+    ] {
+        report.outcome.review.as_mut().unwrap().reviewed_base = reviewed_base.clone();
+        let payload = github_payload(
+            &report,
+            &report.route.candidate,
+            &policy,
+            "https://example.invalid/details",
+        )
+        .unwrap();
+        assert_eq!(
+            payload["conclusion"],
+            if reviewed_base.as_ref() == Some(&report.route.candidate.base) {
+                "success"
+            } else {
+                "failure"
+            }
+        );
+    }
+}
+
+#[test]
 fn repair_rejects_missing_explicit_target_and_changed_policy_before_any_forge_access() {
     use repo_review::{
         app::{Application, Target},

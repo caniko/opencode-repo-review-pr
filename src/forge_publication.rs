@@ -28,11 +28,13 @@ pub fn github_payload(
     require_completed(report, candidate)?;
     let ready = report.outcome.verdict == Verdict::Ready
         && report.outcome.blockers.is_empty()
-        && report
-            .outcome
-            .review
-            .as_ref()
-            .is_some_and(|r| policy.evaluate(candidate, r) == Verdict::Ready);
+        && report.outcome.review.as_ref().is_some_and(|r| {
+            policy.evaluate(candidate, r) == Verdict::Ready
+                    // Local advisory acceptance is broader than an exact PR
+                    // check. Legacy records must not gain forge enforcement.
+                    && (r.provider != "roborev"
+                        || r.reviewed_base.as_ref() == Some(&candidate.base))
+        });
     Ok(
         json!({"name":"review-policy","head_sha":candidate.head,"status":"completed",
         "conclusion":if ready {"success"} else {"failure"},"details_url":details.as_str(),

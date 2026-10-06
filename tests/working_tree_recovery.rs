@@ -67,6 +67,8 @@ impl Fixture {
         let temporary = tempfile::tempdir().unwrap();
         let socket = temporary.path().join("daemon.sock");
         let listener = UnixListener::bind(&socket).unwrap();
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(&socket, std::fs::Permissions::from_mode(0o600)).unwrap();
         listener.set_nonblocking(true).unwrap();
         let policy = Policy {
             provider: "roborev".into(),
@@ -277,4 +279,56 @@ fn working_tree_untrusted_detail_cannot_change_unknown_ledger_or_reenqueue() {
         assert!(fixture.provider().submit(&fixture.intent).is_err());
         assert_eq!(*fixture.enqueues.lock().unwrap(), 1, "{case}");
     }
+}
+
+#[test]
+fn legacy_submission_resumes_with_original_identity_and_persistent_no_replay_anchor() {
+    let fixture = Fixture::new();
+    let original = json!({
+        "id":7,"uuid":"legacy-job-uuid","repo_path":fixture.temporary.path().join("snapshot"),
+        "git_ref":"dirty","agent":"opencode","agentic":false,"min_severity":"low",
+        "status":"done","diff_content":"EXACT_CAPTURED_TRACKED_DIFF\n"
+    });
+    *fixture.job.lock().unwrap() = Some(original.clone());
+    storage::save(
+        &fixture.ledger(),
+        &json!({
+            "intent":fixture.intent,"snapshot":fixture.temporary.path().join("snapshot"),
+            "git_ref":"dirty","baseline":[],"job":original,"dispatching":true,
+            "diff_digest":storage::digest(b"EXACT_CAPTURED_TRACKED_DIFF\n")
+        }),
+    )
+    .unwrap();
+    assert!(!fixture.ledger().with_extension("lock").exists());
+    let evidence = fixture
+        .provider()
+        .inspect(
+            &fixture.intent.candidate,
+            &fixture.policy,
+            Some(&fixture.intent),
+        )
+        .unwrap();
+    assert_eq!(
+        evidence.request_receipt.as_deref(),
+        Some("roborev:job:7:legacy-job-uuid")
+    );
+    assert_eq!(
+        evidence.review.unwrap().provider_review_id.as_deref(),
+        Some("9")
+    );
+    assert!(fixture.ledger().with_extension("lock").exists());
+    let retained = std::fs::read(fixture.ledger()).unwrap();
+    fixture.job.lock().unwrap().as_mut().unwrap()["uuid"] = json!("replacement-job");
+    assert!(fixture
+        .provider()
+        .inspect(
+            &fixture.intent.candidate,
+            &fixture.policy,
+            Some(&fixture.intent),
+        )
+        .is_err());
+    assert_eq!(std::fs::read(fixture.ledger()).unwrap(), retained);
+    std::fs::remove_file(fixture.ledger()).unwrap();
+    assert!(fixture.provider().submit(&fixture.intent).is_err());
+    assert_eq!(*fixture.enqueues.lock().unwrap(), 0);
 }

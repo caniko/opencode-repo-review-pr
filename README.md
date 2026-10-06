@@ -3,7 +3,9 @@
 `repo-review` plans, requests and tracks revision-bound repository reviews. It
 uses Greptile's confirmed free allowance for eligible GitHub targets, then
 roborev for overflow. Forgejo targets use roborev. The acceptance engine is the
-published `canix-toolbelt = 0.2.1` review library.
+published `canix-toolbelt = 0.3.0` review library. Toolbelt also owns the bounded
+Unix HTTP transport, local review provider and durable job recovery. This client
+supplies OpenCode routing, trusted worker policy, snapshots and presentation.
 
 This repository contains the Rust CLI and five installable OpenCode V2 commands.
 Provider configuration and worker qualification are operator-owned. The default
@@ -196,17 +198,19 @@ retain the explicitly captured tracked diff. These local scopes remain advisory.
 An existing submission recorded with a different range blocks resumption; preserve
 its state and reconcile it rather than deleting its ledger to enqueue again.
 
-This client consumes published Toolbelt 0.2.1 and retains its local Unix transport
-for committed and working-tree review scopes. The published
-`github-receipt-v1` producer and Unix dispatch APIs have separate integration and
-production-worker qualification gates.
+This client consumes Toolbelt 0.3.0's `RoborevHttp`, `RoborevLocal` and
+`normalize_roborev_local` interfaces. OpenCode scope selection and trusted worker
+qualification remain client-owned. The `github-receipt-v1` producer and bounded
+worker dispatch APIs retain separate production-worker qualification gates.
 
 Review records retain distinct provider job/review identities and the attested
 compared base. A local merge-base comparison against a divergent target remains
 advisory: its actual base is preserved and the exact-target acceptance gate
 reports `blocked`. Working-tree reviews carry no committed-base attestation.
-Saved pre-migration records remain readable; missing base evidence cannot grant
-fresh roborev acceptance.
+Saved pre-migration records remain readable. Missing actual PR-base attestation
+cannot grant receipt acceptance or publish a successful GitHub policy check.
+Intact legacy submissions resume with their original job ID/UUID and captured
+diff; a changed identity or missing journal behind its lock anchor blocks replay.
 
 Roborev dispatch explicitly requests the `low` severity floor and rejects jobs
 that used a narrower filter. Working-tree recovery reads the single-job detail
@@ -315,14 +319,20 @@ allocation, rollover/reconciliation, fake CLI execution and accounting, daemon
 lost-reply recovery, dispositions, App protection, atomic snapshots, RPC failures
 and process-group cleanup. Synthetic fixtures do not qualify live providers.
 
-Canix's `tests/roborev/client.py` additionally drives this compiled CLI against
+Toolbelt's `tests/roborev/client.py` additionally drives this compiled CLI against
 the exact Harbor roborev daemon in private offline PID/network namespaces. It
 tests lost enqueue replies, restart/resume without replay, severity/diff identity,
 stale heads, findings/dispositions, tracked working-tree scope, failed execution
 and offline forge routing. Its receipt binds both executable hashes and verifies
 cleanup; the adapter and repository are synthetic.
 
-The separate Canix Harbor roborev package, generated Home Manager units,
+The registry-backed 0.3.0 migration passed 64 native tests, warnings-denied
+all-targets Clippy, scoped treefmt and the real stock v0.71.0 offline daemon lane.
+The lane covers full-range review, lost enqueue replies, restart recovery,
+captured-diff custody and descendant cleanup. Evidence is retained at
+`/data/scratch/tmp/opencode/roborev-merge-20261006.CU1fQd/client-registry-*`.
+
+The separate Toolbelt Harbor roborev package, generated Home Manager units,
 service-switch fixtures, exact-output adapter replay and worker confinement have
 their own qualification records. Thething's roborev integration must remain
 disabled until those gates pass. Provider account verification, App/protection

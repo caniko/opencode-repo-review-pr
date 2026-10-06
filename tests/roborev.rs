@@ -152,9 +152,14 @@ fn divergent_target_range_qualifies_but_local_merge_base_remains_advisory() {
                 ancestor.as_str()
             })
         );
-        assert_eq!(
-            policy.evaluate(&selected, &review).exit_code(),
-            if scope == Scope::PullRequest { 0 } else { 22 }
+        assert_eq!(policy.evaluate(&selected, &review).exit_code(), 0);
+        let publication_policy = Policy {
+            transport: "github-receipt-v1".into(),
+            ..policy.clone()
+        };
+        assert_ne!(
+            publication_policy.evaluate(&selected, &review).exit_code(),
+            0
         );
     }
 }
@@ -164,6 +169,8 @@ fn wrong_pr_range_is_rejected_before_any_daemon_request() {
     let (directory, selected, ancestor) = divergent_history();
     let socket = directory.path().join("daemon.sock");
     let listener = std::os::unix::net::UnixListener::bind(&socket).unwrap();
+    use std::os::unix::fs::PermissionsExt;
+    std::fs::set_permissions(&socket, std::fs::Permissions::from_mode(0o600)).unwrap();
     listener.set_nonblocking(true).unwrap();
     let settings = repo_review::config::Roborev {
         socket: Some(socket),
@@ -207,7 +214,7 @@ fn wrong_pr_range_is_rejected_before_any_daemon_request() {
 }
 
 #[test]
-fn historical_roborev_records_without_base_attestation_cannot_grant_acceptance() {
+fn historical_roborev_records_without_base_attestation_cannot_grant_receipt_acceptance() {
     let job =
         json!({"id":12,"uuid":"uuid","git_ref":format!("{}..{}","b".repeat(40),"a".repeat(40))});
     let raw = json!({"id":34,"job_id":12,"job":job,
@@ -215,7 +222,7 @@ fn historical_roborev_records_without_base_attestation_cannot_grant_acceptance()
         "file_coverage":{"reviewed":1,"excluded":0}});
     let policy = Policy {
         provider: "roborev".into(),
-        transport: "unix-http-v0.71".into(),
+        transport: "github-receipt-v1".into(),
         ..Policy::default()
     };
     let review =

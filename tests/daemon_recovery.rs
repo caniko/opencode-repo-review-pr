@@ -45,6 +45,8 @@ fn lost_enqueue_reply_is_adopted_once_against_the_exact_snapshot() {
     git(&["commit", "--quiet", "-m", "changed"]);
     let socket = temporary.path().join("daemon.sock");
     let listener = UnixListener::bind(&socket).unwrap();
+    use std::os::unix::fs::PermissionsExt;
+    std::fs::set_permissions(&socket, std::fs::Permissions::from_mode(0o600)).unwrap();
     listener.set_nonblocking(true).unwrap();
     let jobs = Arc::new(Mutex::new(Vec::<Value>::new()));
     let stop = Arc::new(AtomicBool::new(false));
