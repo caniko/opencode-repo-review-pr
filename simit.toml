@@ -1,0 +1,4 @@
+[ci]
+platform = "github"
+provider = "actions"
+runner = "ubuntu-24.04"
